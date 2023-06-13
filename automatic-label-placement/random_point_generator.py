@@ -2,11 +2,24 @@ import random
 from drawsvg import Drawing, Circle, Rectangle
 import webbrowser
 import os
+from typing import List, Tuple
 
 
 def generate_random_points(
-    num_points=1000, width=500, height=500, radius=1, num_selected=200
-):
+    num_points: int = 1000, width: int = 500, height: int = 500, radius: int = 1, num_selected: int = 200
+) -> List[Tuple[Circle, bool]]:
+    """Generate random points with a number of points randomly selected.
+
+    Args:
+        num_points: Total number of random points to generate (default 1000).
+        width:  width of the boundary (default 500).
+        height: height of the boundary within which the points are generated (default 500).
+        radius: radius of each point (default 1).
+        num_selected: Number of points to select from the generated random points (default 200).
+    Returns:
+        random_points: A list of tuples where the first element of a tuple is a Circle object and
+        the second element is a boolean indicating if the point is selected.
+    """
 
     random_points = []
     selected_points = random.sample(range(num_points), num_selected)
@@ -25,14 +38,29 @@ def generate_random_points(
 
 
 def generate_label_boxes(
-    random_points,
-    width=500,
-    height=500,
-    radius=1,
-    label_width=50,
-    label_height=6,
-    label_distance=1,
-):
+    random_points: list,
+    width: int = 500,
+    height: int = 500,
+    radius: int = 1,
+    label_width: int = 50,
+    label_height: int = 6,
+    label_distance: int = 1,
+) -> List[Rectangle]:
+    """Generate label boxes for the selected points.
+
+    Args:
+        random_points: A list of tuples where the first element of a tuple is a Circle object and
+            the second element is a boolean indicating if the point is selected.
+        width:  width of the boundary (default 500).
+        height: height of the boundary within which the points are generated (default 500).
+        radius: radius of each point (default 1).
+        label_width: Width of the label boxes (default 50).
+        label_height: Height of the label boxes (default 6).
+        label_distance: Distance between the label boxes and the points (default 1).
+
+    Returns:
+        label_boxes: A list of label boxes.
+    """
 
     label_boxes = []
     for random_point, is_selected in random_points:
@@ -71,7 +99,19 @@ def generate_label_boxes(
     return label_boxes
 
 
-def calculate_overlaps(points, boxes):
+def calculate_overlaps(points: List[Tuple[Circle, bool]], boxes: List[Rectangle]) -> Tuple[int, int]:
+    """Calculate the number of overlaps between label boxes and between label boxes and points.
+
+    Args:
+        points: A list of tuples where the first element of a tuple is a Circle object and
+        the second element is a boolean indicating if the point is selected.
+        boxes: A list of label boxes.
+
+    Returns:
+        A tuple with two integers:
+        - num_label_overlaps: Number of overlaps between label boxes.
+        - num_label_point_overlaps: Number of overlaps between label boxes and points.
+    """
 
     num_label_overlaps = 0
     num_label_point_overlaps = 0
@@ -96,8 +136,10 @@ def calculate_overlaps(points, boxes):
                 and label_y + label_height > other_y
             ):
                 num_label_overlaps += 1
+                label_box.args["stroke"] = "red"
+                other_box.args["stroke"] = "red"
 
-        for point, _ in points:
+        for point, is_selected in points:
             point_x, point_y = point.args["cx"], point.args["cy"]
             radius = point.args["r"]
 
@@ -108,6 +150,8 @@ def calculate_overlaps(points, boxes):
                 and label_y + label_height > point_y - radius
             ):
                 num_label_point_overlaps += 1
+                label_box.args["stroke"] = "red"
+                point.args["fill"] = "red"
 
     return num_label_overlaps, num_label_point_overlaps
 
