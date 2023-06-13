@@ -4,13 +4,8 @@ import webbrowser
 import os
 
 
-WIDTH = 500
-HEIGHT = 500
-R = 1
-
-
 def generate_random_points(
-    num_points=1000, width=WIDTH, height=HEIGHT, radius=R, num_selected=200
+    num_points=1000, width=500, height=500, radius=1, num_selected=200
 ):
 
     random_points = []
@@ -31,9 +26,9 @@ def generate_random_points(
 
 def generate_label_boxes(
     random_points,
-    width=WIDTH,
-    height=HEIGHT,
-    radius=R,
+    width=500,
+    height=500,
+    radius=1,
     label_width=50,
     label_height=6,
     label_distance=1,
@@ -58,7 +53,7 @@ def generate_label_boxes(
                     label_x = x - radius - label_distance - label_width
                     label_y = y - label_height / 2
 
-                if (  # if a box is cut by boundary
+                if (  # check if a box is cut by boundary
                     label_x >= 0
                     and label_y >= 0
                     and label_x + label_width <= width
@@ -126,6 +121,8 @@ print(f"Number of total overlaps: {num_label_overlaps + num_label_point_overlaps
 
 
 d = Drawing(500, 500)
+boundary = Rectangle(0, 0, width=500, height=500, fill="none", stroke="black")
+d.append(boundary)
 
 index = 0
 for point in points:
