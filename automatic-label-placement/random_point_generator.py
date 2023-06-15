@@ -6,14 +6,18 @@ from typing import List, Tuple
 
 
 def generate_random_points(
-    num_points: int = 1000, width: int = 500, height: int = 500, radius: int = 1, num_selected: int = 200
+    num_points: int = 1000,
+    width: int = 750,
+    height: int = 750,
+    radius: int = 1,
+    num_selected: int = 200,
 ) -> List[Tuple[Circle, bool]]:
     """Generate random points with a number of points randomly selected.
 
     Args:
         num_points: Total number of random points to generate (default 1000).
-        width:  width of the boundary (default 500).
-        height: height of the boundary within which the points are generated (default 500).
+        width:  width of the boundary (default 750).
+        height: height of the boundary within which the points are generated (default 750).
         radius: radius of each point (default 1).
         num_selected: Number of points to select from the generated random points (default 200).
     Returns:
@@ -38,9 +42,9 @@ def generate_random_points(
 
 
 def generate_label_boxes(
-    random_points: list,
-    width: int = 500,
-    height: int = 500,
+    random_points: List[Tuple[Circle, bool]],
+    width: int = 750,
+    height: int = 750,
     radius: int = 1,
     label_width: int = 50,
     label_height: int = 6,
@@ -51,8 +55,8 @@ def generate_label_boxes(
     Args:
         random_points: A list of tuples where the first element of a tuple is a Circle object and
             the second element is a boolean indicating if the point is selected.
-        width:  width of the boundary (default 500).
-        height: height of the boundary within which the points are generated (default 500).
+        width:  width of the boundary (default 750).
+        height: height of the boundary within which the points are generated (default 750).
         radius: radius of each point (default 1).
         label_width: Width of the label boxes (default 50).
         label_height: Height of the label boxes (default 6).
@@ -99,12 +103,14 @@ def generate_label_boxes(
     return label_boxes
 
 
-def calculate_overlaps(points: List[Tuple[Circle, bool]], boxes: List[Rectangle]) -> Tuple[int, int]:
+def calculate_overlaps(
+    points: List[Tuple[Circle, bool]], boxes: List[Rectangle]
+) -> Tuple[int, int]:
     """Calculate the number of overlaps between label boxes and between label boxes and points.
 
     Args:
         points: A list of tuples where the first element of a tuple is a Circle object and
-        the second element is a boolean indicating if the point is selected.
+            the second element is a boolean indicating if the point is selected.
         boxes: A list of label boxes.
 
     Returns:
@@ -156,25 +162,59 @@ def calculate_overlaps(points: List[Tuple[Circle, bool]], boxes: List[Rectangle]
     return num_label_overlaps, num_label_point_overlaps
 
 
+def monte_carlo_simulation(
+    points: List[Tuple[Circle, bool]], num_sim: int = 10
+) -> tuple[int, list[Rectangle]]:
+    """Perform a Monte Carlo simulation to find the optimal configuration of label boxes.
+
+    Args:
+        points: A list of tuples where the first element of a tuple is a Circle object and
+            the second element is a boolean indicating if the point is selected.
+        num_sim: The number of simulations to perform (default 10).
+
+    Returns:
+        A tuple with two elements:
+        - num_overlaps: Minimal number of overlaps found in the simulations.
+        - boxes: A list of label boxes.
+    """
+
+    results = []
+    for _ in range(num_sim):
+        boxes = generate_label_boxes(points)
+
+        if any(boxes == result[1] for result in results):
+            boxes = generate_label_boxes(points)
+
+        num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
+        num_overlaps = num_label_overlaps + num_label_point_overlaps
+        results.append((num_overlaps, boxes))
+
+        for point, _ in points:
+            point.args["fill"] = "black"
+
+    # sort the results based on num_overlaps
+    results.sort(key=lambda x: x[0])
+    return results[0]
+
+
 points = generate_random_points()
-boxes = generate_label_boxes(points)
-num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
-print(f"Number of overlaps between labels: {num_label_overlaps}")
-print(f"Number of overlaps between labels and points: {num_label_point_overlaps}")
-print(f"Number of total overlaps: {num_label_overlaps + num_label_point_overlaps}")
+optimal_result = monte_carlo_simulation(points, 50)
+print(f"Minimal num_overlaps: {optimal_result[0]}")
 
 
-d = Drawing(500, 500)
-boundary = Rectangle(0, 0, width=500, height=500, fill="none", stroke="black")
+d = Drawing(750, 750)
+boundary = Rectangle(0, 0, width=750, height=750, fill="none", stroke="black")
 d.append(boundary)
 
+# color the points and boxes of the optimal result from simulations
+calculate_overlaps(points, optimal_result[1])
 index = 0
 for point in points:
     if point[1]:
-        d.append(boxes[index])
+        d.append(optimal_result[1][index])
         index += 1
     d.append(point[0])
 
-d.set_render_size(700, 700)
+d.set_render_size(750, 750)
 d.save_svg("point_label_placement.svg")
 webbrowser.open(f"file://{os.path.abspath('point_label_placement.svg')}")
