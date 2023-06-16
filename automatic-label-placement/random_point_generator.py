@@ -218,3 +218,13 @@ for point in points:
 d.set_render_size(750, 750)
 d.save_svg("point_label_placement.svg")
 webbrowser.open(f"file://{os.path.abspath('point_label_placement.svg')}")
+
+# Step 1: Find all the red boxes and their corresponding points
+red_boxes = []
+corresponding_points = []
+
+for element in d.elements:
+    if isinstance(element, Rectangle) and element.args["stroke"] == "red":
+        red_boxes.append(element)
+        element_index = d.elements.index(element)
+        corresponding_points.append(d.elements[element_index+1])
