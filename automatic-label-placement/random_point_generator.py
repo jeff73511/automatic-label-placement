@@ -192,7 +192,7 @@ def monte_carlo_simulation(
         for point, _ in points:
             point.args["fill"] = "black"
 
-    # sort the results based on num_overlaps
+    # Sort the results based on num_overlaps
     results.sort(key=lambda x: x[0])
     return results[0]
 
@@ -206,7 +206,7 @@ d = Drawing(750, 750)
 boundary = Rectangle(0, 0, width=750, height=750, fill="none", stroke="black")
 d.append(boundary)
 
-# color the points and boxes of the optimal result from simulations
+# Color the points and boxes of the optimal result from simulations
 calculate_overlaps(points, optimal_result[1])
 index = 0
 for point in points:
@@ -219,12 +219,121 @@ d.set_render_size(750, 750)
 d.save_svg("point_label_placement.svg")
 webbrowser.open(f"file://{os.path.abspath('point_label_placement.svg')}")
 
-# Step 1: Find all the red boxes and their corresponding points
-red_boxes = []
-corresponding_points = []
+# Find all the indexes of red boxes and their corresponding points in d
+red_box_indexes = []
+corresponding_point_indexes = []
 
+for index, element in enumerate(d.elements):
+    if isinstance(element, Rectangle) and element.args.get("stroke") == "red":
+        red_box_indexes.append(index)
+        corresponding_point_indexes.append(index + 1)
+
+
+positions = ["right", "above", "below", "left"]
+label_distance = radius = 1
+label_height = 6
+label_width = 50
+width = height = 750
+
+
+def process_position(label_x, label_y):
+    if (  # check if a box is cut by boundary
+            label_x >= 0
+            and label_y >= 0
+            and label_x + label_width <= width
+            and label_y + label_height <= height
+    ):
+        d.elements[i - 1].args["x"] = label_x
+        d.elements[i - 1].args["y"] = label_y
+
+        # Reset colors to black
+        for element in d.elements:
+            if isinstance(element, Circle):
+                element.args["fill"] = "black"
+            elif isinstance(element, Rectangle):
+                element.args["stroke"] = "black"
+
+        points = []
+        boxes = []
+        for j in range(1, len(d.elements)):
+            element = d.elements[j]
+
+            if isinstance(element, Circle):
+                # Check if the Circle object is preceded by a Rectangle object
+                if isinstance(d.elements[j - 1], Rectangle):
+                    selected = True
+                else:
+                    selected = False
+
+                points.append((element, selected))
+            elif isinstance(element, Rectangle):
+                boxes.append(element)
+
+        num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
+        return num_label_overlaps + num_label_point_overlaps
+    else:
+        return None
+
+
+for i in corresponding_point_indexes:
+    x = d.elements[i].args["cx"]
+    y = d.elements[i].args["cy"]
+
+    label_right = label_above = label_below = label_left = None
+    for p in positions:
+        if p == "right":
+            label_x_right = x + radius + label_distance
+            label_y_right = y - label_height / 2
+            label_right = (p, process_position(label_x_right, label_y_right), (label_x_right, label_y_right))
+        elif p == "above":
+            label_x_above = x - label_width / 2
+            label_y_above = y + radius + label_distance
+            label_above = (p, process_position(label_x_above, label_y_above), (label_x_above, label_y_above))
+        elif p == "below":
+            label_x_below = x - label_width / 2
+            label_y_below = y - radius - label_distance - label_height
+            label_below = (p, process_position(label_x_below, label_y_below), (label_x_below, label_y_below))
+        else:
+            label_x_left = x - radius - label_distance - label_width
+            label_y_left = y - label_height / 2
+            label_left = (p, process_position(label_x_left, label_y_left), (label_x_left, label_y_left))
+
+    tuples = [label_right, label_above, label_below, label_left]
+    tuples = [t for t in tuples if t[1] is not None]
+    min_value = min(tuples, key=lambda x: x[1])[1]
+    min_tuples = [t for t in tuples if t[1] == min_value]
+    selected_tuple = random.choice(min_tuples)
+
+    process_position(selected_tuple[2][0], selected_tuple[2][1])
+
+    # d.save_svg("point_label_placement.svg")
+    # webbrowser.open(f"file://{os.path.abspath('point_label_placement.svg')}")
+
+# Reset colors to black
 for element in d.elements:
-    if isinstance(element, Rectangle) and element.args["stroke"] == "red":
-        red_boxes.append(element)
-        element_index = d.elements.index(element)
-        corresponding_points.append(d.elements[element_index+1])
+    if isinstance(element, Circle):
+        element.args["fill"] = "black"
+    elif isinstance(element, Rectangle):
+        element.args["stroke"] = "black"
+
+points = []
+boxes = []
+for j in range(1, len(d.elements)):
+    element = d.elements[j]
+
+    if isinstance(element, Circle):
+        # Check if the Circle object is preceded by a Rectangle object
+        if isinstance(d.elements[j - 1], Rectangle):
+            selected = True
+        else:
+            selected = False
+
+        points.append((element, selected))
+    elif isinstance(element, Rectangle):
+        boxes.append(element)
+
+num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
+
+d.save_svg("point_label_placement.svg")
+webbrowser.open(f"file://{os.path.abspath('point_label_placement.svg')}")
+print(f"Minimal num_overlaps after adjustment: {num_label_overlaps + num_label_point_overlaps}")
