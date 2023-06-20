@@ -7,18 +7,18 @@ from typing import List, Tuple
 
 def generate_random_points(
     num_points: int = 1000,
-    width: int = 750,
-    height: int = 750,
-    radius: int = 1,
+    width: int = 2000,
+    height: int = 2000,
+    radius: int = 4,
     num_selected: int = 200,
 ) -> List[Tuple[Circle, bool]]:
     """Generate random points with a number of points randomly selected.
 
     Args:
         num_points: Total number of random points to generate (default 1000).
-        width:  width of the boundary (default 750).
-        height: height of the boundary within which the points are generated (default 750).
-        radius: radius of each point (default 1).
+        width:  width of the boundary (default 2000).
+        height: height of the boundary within which the points are generated (default 2000).
+        radius: radius of each point (default 4).
         num_selected: Number of points to select from the generated random points (default 200).
     Returns:
         random_points: A list of tuples where the first element of a tuple is a Circle object and
@@ -43,11 +43,11 @@ def generate_random_points(
 
 def generate_label_boxes(
     random_points: List[Tuple[Circle, bool]],
-    width: int = 750,
-    height: int = 750,
-    radius: int = 1,
-    label_width: int = 50,
-    label_height: int = 6,
+    width: int = 2000,
+    height: int = 2000,
+    radius: int = 4,
+    label_width: int = 88,
+    label_height: int = 23,
     label_distance: int = 1,
 ) -> List[Rectangle]:
     """Generate label boxes for the selected points.
@@ -55,11 +55,11 @@ def generate_label_boxes(
     Args:
         random_points: A list of tuples where the first element of a tuple is a Circle object and
             the second element is a boolean indicating if the point is selected.
-        width:  width of the boundary (default 750).
-        height: height of the boundary within which the points are generated (default 750).
-        radius: radius of each point (default 1).
-        label_width: Width of the label boxes (default 50).
-        label_height: Height of the label boxes (default 6).
+        width:  width of the boundary (default 2000).
+        height: height of the boundary within which the points are generated (default 2000).
+        radius: radius of each point (default 4).
+        label_width: Width of the label boxes (default 88).
+        label_height: Height of the label boxes (default 23).
         label_distance: Distance between the label boxes and the points (default 1).
 
     Returns:
@@ -81,11 +81,11 @@ def generate_label_boxes(
                 elif position == "below":
                     label_x = x - label_width / 2
                     label_y = y - radius - label_distance - label_height
-                else:  # left
+                else:  # Left
                     label_x = x - radius - label_distance - label_width
                     label_y = y - label_height / 2
 
-                if (  # check if a box is cut by boundary
+                if (  # Check if a box is cut by boundary
                     label_x >= 0
                     and label_y >= 0
                     and label_x + label_width <= width
@@ -198,12 +198,12 @@ def monte_carlo_simulation(
 
 
 points = generate_random_points()
-optimal_result = monte_carlo_simulation(points, 50)
+optimal_result = monte_carlo_simulation(points, 100)
 print(f"Minimal num_overlaps: {optimal_result[0]}")
 
 
-d = Drawing(750, 750)
-boundary = Rectangle(0, 0, width=750, height=750, fill="none", stroke="black")
+d = Drawing(2000, 2000)
+boundary = Rectangle(0, 0, width=2000, height=2000, fill="none", stroke="black")
 d.append(boundary)
 
 # Color the points and boxes of the optimal result from simulations
@@ -215,7 +215,7 @@ for point in points:
         index += 1
     d.append(point[0])
 
-d.set_render_size(750, 750)
+d.set_render_size(740, 740)
 d.save_svg("point_label_placement.svg")
 webbrowser.open(f"file://{os.path.abspath('point_label_placement.svg')}")
 
@@ -230,14 +230,15 @@ for index, element in enumerate(d.elements):
 
 
 positions = ["right", "above", "below", "left"]
-label_distance = radius = 1
-label_height = 6
-label_width = 50
-width = height = 750
+radius = 4
+label_distance = 1
+label_height = 23
+label_width = 88
+width = height = 2000
 
 
 def process_position(label_x, label_y):
-    if (  # check if a box is cut by boundary
+    if (  # Check if a box is cut by boundary
             label_x >= 0
             and label_y >= 0
             and label_x + label_width <= width
@@ -257,21 +258,18 @@ def process_position(label_x, label_y):
         boxes = []
         for j in range(1, len(d.elements)):
             element = d.elements[j]
-
-            if isinstance(element, Circle):
-                # Check if the Circle object is preceded by a Rectangle object
-                if isinstance(d.elements[j - 1], Rectangle):
-                    selected = True
-                else:
-                    selected = False
-
-                points.append((element, selected))
-            elif isinstance(element, Rectangle):
+            # A selected Circle object always goes after a Rectangle object
+            if isinstance(element, Rectangle):
                 boxes.append(element)
+                points.append((d.elements[j + 1], True))
+            else:
+                points.append((d.elements[j], False))
 
         num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
+
         return num_label_overlaps + num_label_point_overlaps
     else:
+
         return None
 
 
@@ -320,17 +318,12 @@ points = []
 boxes = []
 for j in range(1, len(d.elements)):
     element = d.elements[j]
-
-    if isinstance(element, Circle):
-        # Check if the Circle object is preceded by a Rectangle object
-        if isinstance(d.elements[j - 1], Rectangle):
-            selected = True
-        else:
-            selected = False
-
-        points.append((element, selected))
-    elif isinstance(element, Rectangle):
+    # A selected Circle object always goes after a Rectangle object
+    if isinstance(element, Rectangle):
         boxes.append(element)
+        points.append((d.elements[j+1], True))
+    else:
+        points.append((d.elements[j], False))
 
 num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
 
