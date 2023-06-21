@@ -2,7 +2,7 @@ import random
 from drawsvg import Drawing, Circle, Rectangle
 import webbrowser
 import os
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 
 def generate_random_points(
@@ -199,7 +199,7 @@ def monte_carlo_simulation(
 
 points = generate_random_points()
 optimal_result = monte_carlo_simulation(points, 100)
-print(f"Minimal num_overlaps: {optimal_result[0]}")
+print(f"Minimal numer of overlaps from Monte Carlo simulation: {optimal_result[0]}")
 
 
 d = Drawing(2000, 2000)
@@ -219,30 +219,61 @@ d.set_render_size(740, 740)
 d.save_svg("point_label_placement.svg")
 webbrowser.open(f"file://{os.path.abspath('point_label_placement.svg')}")
 
-# Find all the indexes of red boxes and their corresponding points in d
-red_box_indexes = []
-corresponding_point_indexes = []
 
-for index, element in enumerate(d.elements):
-    if isinstance(element, Rectangle) and element.args.get("stroke") == "red":
-        red_box_indexes.append(index)
-        corresponding_point_indexes.append(index + 1)
+def find_red_boxes(d: Drawing) -> Tuple[List[int], List[int]]:
+    """Find all the indexes of red boxes and their corresponding points in the given list of elements.
+
+    Args:
+        d: A Drawing object.
+
+    Returns:
+        A tuple with two lists:
+            - red_box_indexes: A list of indexes of red boxes.
+            - corresponding_point_indexes: A list of corresponding point indexes.
+    """
+
+    red_box_indexes: List[int] = []
+    corresponding_point_indexes: List[int] = []
+
+    for index, element in enumerate(d.elements):
+        if isinstance(element, Rectangle) and element.args.get("stroke") == "red":
+            red_box_indexes.append(index)
+            corresponding_point_indexes.append(index + 1)
+
+    return red_box_indexes, corresponding_point_indexes
 
 
-positions = ["right", "above", "below", "left"]
-radius = 4
-label_distance = 1
-label_height = 23
-label_width = 88
-width = height = 2000
+def process_position(
+    i: int,
+    label_x: float,
+    label_y: float,
+    width: int = 2000,
+    height: int = 2000,
+    label_height: int = 23,
+    label_width: int = 88,
+) -> Optional[int]:
+    """Process the position of a label within specified boundaries, update element positions, reset colors,
+        and calculate overlaps.
 
+    Args:
+        i: The index of the element in d.elements.
+        label_x: The x-coordinate of the label.
+        label_y: The y-coordinate of the label.
+        width: The width of the boundaries (defaults 2000).
+        height: The height of the boundaries (defaults 2000).
+        label_height: The height of the label (defaults 23).
+        label_width: The width of the label (defaults 88).
 
-def process_position(label_x, label_y):
+    Returns:
+        Optional[int]: The total number of label overlaps and label-point overlaps, or
+            None if the label is outside the boundaries.
+    """
+
     if (  # Check if a box is cut by boundary
-            label_x >= 0
-            and label_y >= 0
-            and label_x + label_width <= width
-            and label_y + label_height <= height
+        label_x >= 0
+        and label_y >= 0
+        and label_x + label_width <= width
+        and label_y + label_height <= height
     ):
         d.elements[i - 1].args["x"] = label_x
         d.elements[i - 1].args["y"] = label_y
@@ -269,64 +300,107 @@ def process_position(label_x, label_y):
 
         return num_label_overlaps + num_label_point_overlaps
     else:
-
         return None
 
 
-for i in corresponding_point_indexes:
-    x = d.elements[i].args["cx"]
-    y = d.elements[i].args["cy"]
+def move_red_boxes(
+    d: Drawing,
+    label_height: int = 23,
+    label_width: int = 88,
+    radius: int = 4,
+    label_distance: int = 1,
+) -> None:
+    """Move red boxes around corresponding points to a position with minimal number
+        of overlaps.
 
-    label_right = label_above = label_below = label_left = None
-    for p in positions:
-        if p == "right":
-            label_x_right = x + radius + label_distance
-            label_y_right = y - label_height / 2
-            label_right = (p, process_position(label_x_right, label_y_right), (label_x_right, label_y_right))
-        elif p == "above":
-            label_x_above = x - label_width / 2
-            label_y_above = y + radius + label_distance
-            label_above = (p, process_position(label_x_above, label_y_above), (label_x_above, label_y_above))
-        elif p == "below":
-            label_x_below = x - label_width / 2
-            label_y_below = y - radius - label_distance - label_height
-            label_below = (p, process_position(label_x_below, label_y_below), (label_x_below, label_y_below))
+    Args:
+        d: A Drawing object.
+        label_height: The height of the label (default 23).
+        label_width: The width of the label (default 88).
+        radius: The radius of the points (default 4).
+        label_distance: The distance between labels and points (default 1).
+    """
+
+    corresponding_point_indexes = find_red_boxes(d)[1]
+    positions = ["right", "above", "below", "left"]
+    for i in corresponding_point_indexes:
+        x = d.elements[i].args["cx"]
+        y = d.elements[i].args["cy"]
+
+        label_right = label_above = label_below = label_left = None
+        for p in positions:
+            if p == "right":
+                label_x_right = x + radius + label_distance
+                label_y_right = y - label_height / 2
+                label_right = (
+                    p,
+                    process_position(i, label_x_right, label_y_right),
+                    (label_x_right, label_y_right),
+                )
+            elif p == "above":
+                label_x_above = x - label_width / 2
+                label_y_above = y + radius + label_distance
+                label_above = (
+                    p,
+                    process_position(i, label_x_above, label_y_above),
+                    (label_x_above, label_y_above),
+                )
+            elif p == "below":
+                label_x_below = x - label_width / 2
+                label_y_below = y - radius - label_distance - label_height
+                label_below = (
+                    p,
+                    process_position(i, label_x_below, label_y_below),
+                    (label_x_below, label_y_below),
+                )
+            else:
+                label_x_left = x - radius - label_distance - label_width
+                label_y_left = y - label_height / 2
+                label_left = (
+                    p,
+                    process_position(i, label_x_left, label_y_left),
+                    (label_x_left, label_y_left),
+                )
+
+        tuples = [label_right, label_above, label_below, label_left]
+        tuples = [t for t in tuples if t[1] is not None]
+        min_value = min(tuples, key=lambda x: x[1])[1]
+        min_tuples = [t for t in tuples if t[1] == min_value]
+        selected_tuple = random.choice(min_tuples)
+        process_position(i, float(selected_tuple[2][0]), float(selected_tuple[2][1]))
+
+
+min_num_overlaps = float("inf")
+
+for _ in range(5):
+    move_red_boxes(d)
+    # Reset colors to black
+    for element in d.elements:
+        if isinstance(element, Circle):
+            element.args["fill"] = "black"
+        elif isinstance(element, Rectangle):
+            element.args["stroke"] = "black"
+
+    points = []
+    boxes = []
+    for j in range(1, len(d.elements)):
+        element = d.elements[j]
+        # A selected Circle object always goes after a Rectangle object
+        if isinstance(element, Rectangle):
+            boxes.append(element)
+            points.append((d.elements[j + 1], True))
         else:
-            label_x_left = x - radius - label_distance - label_width
-            label_y_left = y - label_height / 2
-            label_left = (p, process_position(label_x_left, label_y_left), (label_x_left, label_y_left))
+            points.append((d.elements[j], False))
 
-    tuples = [label_right, label_above, label_below, label_left]
-    tuples = [t for t in tuples if t[1] is not None]
-    min_value = min(tuples, key=lambda x: x[1])[1]
-    min_tuples = [t for t in tuples if t[1] == min_value]
-    selected_tuple = random.choice(min_tuples)
+    num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
 
-    process_position(selected_tuple[2][0], selected_tuple[2][1])
+    d.save_svg("point_label_placement.svg")
+    webbrowser.open(f"file://{os.path.abspath('point_label_placement.svg')}")
+    print(
+        f"Minimal numer of overlaps after moving red boxes: {num_label_overlaps + num_label_point_overlaps}"
+    )
 
-    # d.save_svg("point_label_placement.svg")
-    # webbrowser.open(f"file://{os.path.abspath('point_label_placement.svg')}")
-
-# Reset colors to black
-for element in d.elements:
-    if isinstance(element, Circle):
-        element.args["fill"] = "black"
-    elif isinstance(element, Rectangle):
-        element.args["stroke"] = "black"
-
-points = []
-boxes = []
-for j in range(1, len(d.elements)):
-    element = d.elements[j]
-    # A selected Circle object always goes after a Rectangle object
-    if isinstance(element, Rectangle):
-        boxes.append(element)
-        points.append((d.elements[j+1], True))
+    if min_num_overlaps <= num_label_overlaps + num_label_point_overlaps:
+        break
     else:
-        points.append((d.elements[j], False))
-
-num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
-
-d.save_svg("point_label_placement.svg")
-webbrowser.open(f"file://{os.path.abspath('point_label_placement.svg')}")
-print(f"Minimal num_overlaps after adjustment: {num_label_overlaps + num_label_point_overlaps}")
+        min_num_overlaps = num_label_overlaps + num_label_point_overlaps
