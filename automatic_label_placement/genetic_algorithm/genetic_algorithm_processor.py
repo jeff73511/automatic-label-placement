@@ -1,56 +1,37 @@
 import random
 from drawsvg import Drawing, Circle, Rectangle
-import webbrowser
-import os
 from typing import List, Tuple, Optional
+import configparser
 
 
-def generate_random_points(
-    num_points: int = 1000,
-    width: int = 2000,
-    height: int = 2000,
-    radius: int = 4,
-    num_selected: int = 200,
-) -> List[Tuple[Circle, bool]]:
-    """Generate random points with a number of points randomly selected.
+config = configparser.ConfigParser()
+config.read("../config.ini")
 
-    Args:
-        num_points: Total number of random points to generate (default 1000).
-        width:  width of the boundary (default 2000).
-        height: height of the boundary within which the points are generated (default 2000).
-        radius: radius of each point (default 4).
-        num_selected: Number of points to select from the generated random points (default 200).
-    Returns:
-        random_points: A list of tuples where the first element of a tuple is a Circle object and
-        the second element is a boolean indicating if the point is selected.
-    """
+pixel_size = config["PIXEL"].getint("pixel_size")
 
-    random_points = []
-    selected_points = random.sample(range(num_points), num_selected)
+boundary_width = config["BOUNDARY"].getint("boundary_width")
+boundary_height = config["BOUNDARY"].getint("boundary_height")
 
-    for i in range(num_points):
-        x = random.uniform(radius, width - radius)
-        y = random.uniform(radius, height - radius)
-        point = Circle(x, y, radius, fill="black")
+num_points_generated = config["POINT"].getint("num_points_generated")
+num_points_selected = config["POINT"].getint("num_points_selected")
+point_radius = config["POINT"].getint("point_radius")
 
-        if i in selected_points:
-            random_points.append((point, True))
-        else:
-            random_points.append((point, False))
-
-    return random_points
+box_width = config["LABEL"].getint("box_width")
+box_height = config["LABEL"].getint("box_height")
+box_point_distance = config["LABEL"].getint("box_point_distance")
 
 
 def generate_label_boxes(
     random_points: List[Tuple[Circle, bool]],
-    width: int = 2000,
-    height: int = 2000,
-    radius: int = 4,
-    label_width: int = 88,
-    label_height: int = 23,
-    label_distance: int = 1,
+    width: int = boundary_width,
+    height: int = boundary_height,
+    radius: int = point_radius,
+    label_width: int = box_width,
+    label_height: int = box_height,
+    label_distance: int = box_point_distance,
 ) -> List[Rectangle]:
-    """Generate label boxes for the selected points.
+    """Generate label boxes for the selected points and the position of a box to the respective point
+        is randomly generated.
 
     Args:
         random_points: A list of tuples where the first element of a tuple is a Circle object and
@@ -106,7 +87,8 @@ def generate_label_boxes(
 def calculate_overlaps(
     points: List[Tuple[Circle, bool]], boxes: List[Rectangle]
 ) -> Tuple[int, int]:
-    """Calculate the number of overlaps between label boxes and between label boxes and points.
+    """Calculate the number of overlaps between label boxes and between label boxes and points and
+        color any overlaps red.
 
     Args:
         points: A list of tuples where the first element of a tuple is a Circle object and
@@ -162,64 +144,6 @@ def calculate_overlaps(
     return num_label_overlaps, num_label_point_overlaps
 
 
-def monte_carlo_simulation(
-    points: List[Tuple[Circle, bool]], num_sim: int = 10
-) -> tuple[int, list[Rectangle]]:
-    """Perform a Monte Carlo simulation to find the optimal configuration of label boxes.
-
-    Args:
-        points: A list of tuples where the first element of a tuple is a Circle object and
-            the second element is a boolean indicating if the point is selected.
-        num_sim: The number of simulations to perform (default 10).
-
-    Returns:
-        A tuple with two elements:
-        - num_overlaps: Minimal number of overlaps found in the simulations.
-        - boxes: A list of label boxes.
-    """
-
-    results = []
-    for _ in range(num_sim):
-        boxes = generate_label_boxes(points)
-
-        if any(boxes == result[1] for result in results):
-            boxes = generate_label_boxes(points)
-
-        num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
-        num_overlaps = num_label_overlaps + num_label_point_overlaps
-        results.append((num_overlaps, boxes))
-
-        for point, _ in points:
-            point.args["fill"] = "black"
-
-    # Sort the results based on num_overlaps
-    results.sort(key=lambda x: x[0])
-    return results[0]
-
-
-points = generate_random_points()
-optimal_result = monte_carlo_simulation(points, 100)
-print(f"Minimal numer of overlaps from Monte Carlo simulation: {optimal_result[0]}")
-
-
-d = Drawing(2000, 2000)
-boundary = Rectangle(0, 0, width=2000, height=2000, fill="none", stroke="black")
-d.append(boundary)
-
-# Color the points and boxes of the optimal result from simulations
-calculate_overlaps(points, optimal_result[1])
-index = 0
-for point in points:
-    if point[1]:
-        d.append(optimal_result[1][index])
-        index += 1
-    d.append(point[0])
-
-d.set_render_size(740, 740)
-d.save_svg("point_label_placement.svg")
-webbrowser.open(f"file://{os.path.abspath('point_label_placement.svg')}")
-
-
 def find_red_boxes(d: Drawing) -> Tuple[List[int], List[int]]:
     """Find all the indexes of red boxes and their corresponding points in the given list of elements.
 
@@ -244,18 +168,20 @@ def find_red_boxes(d: Drawing) -> Tuple[List[int], List[int]]:
 
 
 def process_position(
+    d: Drawing,
     i: int,
     label_x: float,
     label_y: float,
-    width: int = 2000,
-    height: int = 2000,
-    label_height: int = 23,
-    label_width: int = 88,
+    width: int = boundary_width,
+    height: int = boundary_height,
+    label_height: int = box_height,
+    label_width: int = box_width,
 ) -> Optional[int]:
     """Process the position of a label within specified boundaries, update element positions, reset colors,
         and calculate overlaps.
 
     Args:
+        d: A Drawing object.
         i: The index of the element in d.elements.
         label_x: The x-coordinate of the label.
         label_y: The y-coordinate of the label.
@@ -305,10 +231,10 @@ def process_position(
 
 def move_red_boxes(
     d: Drawing,
-    label_height: int = 23,
-    label_width: int = 88,
-    radius: int = 4,
-    label_distance: int = 1,
+    label_height: int = box_height,
+    label_width: int = box_width,
+    radius: int = point_radius,
+    label_distance: int = box_point_distance,
 ) -> None:
     """Move red boxes around corresponding points to a position with minimal number
         of overlaps.
@@ -334,7 +260,7 @@ def move_red_boxes(
                 label_y_right = y - label_height / 2
                 label_right = (
                     p,
-                    process_position(i, label_x_right, label_y_right),
+                    process_position(d, i, label_x_right, label_y_right),
                     (label_x_right, label_y_right),
                 )
             elif p == "above":
@@ -342,7 +268,7 @@ def move_red_boxes(
                 label_y_above = y + radius + label_distance
                 label_above = (
                     p,
-                    process_position(i, label_x_above, label_y_above),
+                    process_position(d, i, label_x_above, label_y_above),
                     (label_x_above, label_y_above),
                 )
             elif p == "below":
@@ -350,7 +276,7 @@ def move_red_boxes(
                 label_y_below = y - radius - label_distance - label_height
                 label_below = (
                     p,
-                    process_position(i, label_x_below, label_y_below),
+                    process_position(d, i, label_x_below, label_y_below),
                     (label_x_below, label_y_below),
                 )
             else:
@@ -358,7 +284,7 @@ def move_red_boxes(
                 label_y_left = y - label_height / 2
                 label_left = (
                     p,
-                    process_position(i, label_x_left, label_y_left),
+                    process_position(d, i, label_x_left, label_y_left),
                     (label_x_left, label_y_left),
                 )
 
@@ -367,40 +293,4 @@ def move_red_boxes(
         min_value = min(tuples, key=lambda x: x[1])[1]
         min_tuples = [t for t in tuples if t[1] == min_value]
         selected_tuple = random.choice(min_tuples)
-        process_position(i, float(selected_tuple[2][0]), float(selected_tuple[2][1]))
-
-
-min_num_overlaps = float("inf")
-
-for _ in range(5):
-    move_red_boxes(d)
-    # Reset colors to black
-    for element in d.elements:
-        if isinstance(element, Circle):
-            element.args["fill"] = "black"
-        elif isinstance(element, Rectangle):
-            element.args["stroke"] = "black"
-
-    points = []
-    boxes = []
-    for j in range(1, len(d.elements)):
-        element = d.elements[j]
-        # A selected Circle object always goes after a Rectangle object
-        if isinstance(element, Rectangle):
-            boxes.append(element)
-            points.append((d.elements[j + 1], True))
-        else:
-            points.append((d.elements[j], False))
-
-    num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
-
-    d.save_svg("point_label_placement.svg")
-    webbrowser.open(f"file://{os.path.abspath('point_label_placement.svg')}")
-    print(
-        f"Minimal numer of overlaps after moving red boxes: {num_label_overlaps + num_label_point_overlaps}"
-    )
-
-    if min_num_overlaps <= num_label_overlaps + num_label_point_overlaps:
-        break
-    else:
-        min_num_overlaps = num_label_overlaps + num_label_point_overlaps
+        process_position(d, i, float(selected_tuple[2][0]), float(selected_tuple[2][1]))
