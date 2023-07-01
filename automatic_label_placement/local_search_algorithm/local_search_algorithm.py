@@ -1,5 +1,5 @@
 from automatic_label_placement.random_point_generator import generate_random_points
-from genetic_algorithm_processor import (
+from local_search_algorithm_processor import (
     generate_label_boxes,
     calculate_overlaps,
     move_red_boxes,
@@ -31,8 +31,7 @@ if __name__ == "__main__":
     points = generate_random_points()
     boxes = generate_label_boxes(points)
     num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
-    num_overlaps = num_label_overlaps + num_label_point_overlaps
-    print(f"Numer of overlaps from random placement: {num_overlaps}")
+    print(f"Numer of overlaps from random placement: {num_label_overlaps + num_label_point_overlaps}")
 
     d = Drawing(boundary_width, boundary_height)
     boundary = Rectangle(
@@ -48,8 +47,8 @@ if __name__ == "__main__":
         d.append(point[0])
 
     d.set_render_size(pixel_size, pixel_size)
-    d.save_svg("genetic_algorithm.svg")
-    webbrowser.open(f"file://{os.path.abspath('genetic_algorithm.svg')}")
+    d.save_svg("local_search_algorithm.svg")
+    webbrowser.open(f"file://{os.path.abspath('local_search_algorithm.svg')}")
 
     min_num_overlaps = float("inf")
     converge = 0
@@ -75,8 +74,8 @@ if __name__ == "__main__":
 
         num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
 
-        d.save_svg("genetic_algorithm.svg")
-        webbrowser.open(f"file://{os.path.abspath('genetic_algorithm.svg')}")
+        d.save_svg("local_search_algorithm.svg")
+        webbrowser.open(f"file://{os.path.abspath('local_search_algorithm.svg')}")
         print(
             f"Minimal numer of overlaps after moving red boxes: {num_label_overlaps + num_label_point_overlaps}"
         )

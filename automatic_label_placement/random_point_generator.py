@@ -18,9 +18,9 @@ num_points_generated = config["POINT"].getint("num_points_generated")
 num_points_selected = config["POINT"].getint("num_points_selected")
 point_radius = config["POINT"].getint("point_radius")
 
-box_width = config["LABEL"].getint("box_width")
+# box_width = config["LABEL"].getint("box_width")
 box_height = config["LABEL"].getint("box_height")
-box_point_distance = config["LABEL"].getint("box_point_distance")
+# box_point_distance = config["LABEL"].getint("box_point_distance")
 
 
 def generate_random_points(
@@ -28,6 +28,7 @@ def generate_random_points(
     width: int = boundary_width,
     height: int = boundary_height,
     radius: int = point_radius,
+    label_height: int = box_height,
     num_selected: int = num_points_selected,
 ) -> List[Tuple[Circle, bool]]:
     """Generate random points with a number of points randomly selected.
@@ -37,6 +38,7 @@ def generate_random_points(
         width:  width of the boundary (default 2000).
         height: height of the boundary within which the points are generated (default 2000).
         radius: radius of each point (default 4).
+        label_height: Height of the label boxes (default 23).
         num_selected: Number of points to select from the generated random points (default 200).
     Returns:
         random_points: A list of tuples where the first element of a tuple is a Circle object and
@@ -46,9 +48,16 @@ def generate_random_points(
     random_points = []
     selected_points = random.sample(range(num_points), num_selected)
 
+    if 2 * radius >= box_height:
+        y_start = radius
+        y_end = height - radius
+    else:
+        y_start = box_height / 2
+        y_end = height - box_height / 2
+
     for i in range(num_points):
         x = random.uniform(radius, width - radius)
-        y = random.uniform(radius, height - radius)
+        y = random.uniform(y_start, y_end)
         point = Circle(x, y, radius, fill="black")
 
         if i in selected_points:

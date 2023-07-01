@@ -288,9 +288,9 @@ def move_red_boxes(
                     (label_x_left, label_y_left),
                 )
 
-        tuples = [label_right, label_above, label_below, label_left]
-        tuples = [t for t in tuples if t[1] is not None]
-        min_value = min(tuples, key=lambda x: x[1])[1]
-        min_tuples = [t for t in tuples if t[1] == min_value]
+        list_tuples = [label_right, label_above, label_below, label_left]
+        list_tuples = [t for t in list_tuples if t[1] is not None]
+        min_value = min(list_tuples, key=lambda x: x[1])[1]
+        min_tuples = [t for t in list_tuples if t[1] == min_value]
         selected_tuple = random.choice(min_tuples)
         process_position(d, i, float(selected_tuple[2][0]), float(selected_tuple[2][1]))
