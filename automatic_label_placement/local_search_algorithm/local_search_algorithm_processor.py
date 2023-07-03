@@ -1,24 +1,8 @@
 import random
 from drawsvg import Drawing, Circle, Rectangle
 from typing import List, Tuple, Optional
-import configparser
-
-
-config = configparser.ConfigParser()
-config.read("../config.ini")
-
-pixel_size = config["PIXEL"].getint("pixel_size")
-
-boundary_width = config["BOUNDARY"].getint("boundary_width")
-boundary_height = config["BOUNDARY"].getint("boundary_height")
-
-num_points_generated = config["POINT"].getint("num_points_generated")
-num_points_selected = config["POINT"].getint("num_points_selected")
-point_radius = config["POINT"].getint("point_radius")
-
-box_width = config["LABEL"].getint("box_width")
-box_height = config["LABEL"].getint("box_height")
-box_point_distance = config["LABEL"].getint("box_point_distance")
+from automatic_label_placement.config_reader import *
+from automatic_label_placement.label_placement_utils import reset_colors
 
 
 def generate_label_boxes(
@@ -204,12 +188,8 @@ def process_position(
         d.elements[i - 1].args["x"] = label_x
         d.elements[i - 1].args["y"] = label_y
 
-        # Reset colors to black
-        for element in d.elements:
-            if isinstance(element, Circle):
-                element.args["fill"] = "black"
-            elif isinstance(element, Rectangle):
-                element.args["stroke"] = "black"
+        # Reset box and point color to black
+        reset_colors(d)
 
         points = []
         boxes = []

@@ -1,4 +1,4 @@
-from automatic_label_placement.random_point_generator import generate_random_points
+from automatic_label_placement.label_placement_utils import generate_random_points, reset_colors
 from local_search_algorithm_processor import (
     generate_label_boxes,
     calculate_overlaps,
@@ -37,11 +37,7 @@ if __name__ == "__main__":
     while True:
         move_red_boxes(d)
         # Reset box and point color to black
-        for element in d.elements:
-            if isinstance(element, Circle):
-                element.args["fill"] = "black"
-            elif isinstance(element, Rectangle):
-                element.args["stroke"] = "black"
+        reset_colors(d)
 
         points = []
         boxes = []

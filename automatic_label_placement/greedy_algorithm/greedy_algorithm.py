@@ -1,4 +1,4 @@
-from automatic_label_placement.random_point_generator import generate_random_points
+from automatic_label_placement.label_placement_utils import generate_random_points
 from automatic_label_placement.local_search_algorithm.local_search_algorithm_processor import calculate_overlaps
 from greedy_algorithm_processor import label_boxes_for_positions
 from drawsvg import Drawing, Circle, Rectangle
