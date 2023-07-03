@@ -7,27 +7,9 @@ from local_search_algorithm_processor import (
 from drawsvg import Drawing, Circle, Rectangle
 import webbrowser
 import os
-import configparser
+from automatic_label_placement.config_reader import *
 
 if __name__ == "__main__":
-    config = configparser.ConfigParser()
-    config.read("../config.ini")
-
-    pixel_size = config["PIXEL"].getint("pixel_size")
-
-    boundary_width = config["BOUNDARY"].getint("boundary_width")
-    boundary_height = config["BOUNDARY"].getint("boundary_height")
-
-    num_points_generated = config["POINT"].getint("num_points_generated")
-    num_points_selected = config["POINT"].getint("num_points_selected")
-    point_radius = config["POINT"].getint("point_radius")
-
-    box_width = config["LABEL"].getint("box_width")
-    box_height = config["LABEL"].getint("box_height")
-    box_point_distance = config["LABEL"].getint("box_point_distance")
-
-    num_converge = config["CONVERGE"].getint("num_converge")
-
     points = generate_random_points()
     boxes = generate_label_boxes(points)
     num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
