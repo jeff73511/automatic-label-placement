@@ -22,6 +22,7 @@ def generate_random_points(
         radius: radius of each point (default 4).
         label_height: Height of the label boxes (default 23).
         num_selected: Number of points to select from the generated random points (default 200).
+
     Returns:
         random_points: A list of tuples where the first element of a tuple is a Circle object and
         the second element is a boolean indicating if the point is selected.
