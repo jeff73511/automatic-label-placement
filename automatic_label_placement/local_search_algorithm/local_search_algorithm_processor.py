@@ -131,9 +131,7 @@ def process_position(
             else:
                 points.append((d.elements[j], False))
 
-        num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
-
-        return num_label_overlaps + num_label_point_overlaps
+        return calculate_overlaps(points, boxes)
     else:
         return None
 

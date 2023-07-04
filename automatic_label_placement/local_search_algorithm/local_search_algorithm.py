@@ -23,10 +23,8 @@ if __name__ == "__main__":
 
     points = generate_random_points()
     boxes = generate_label_boxes(points)
-    num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
-    print(
-        f"Numer of overlaps from random placement: {num_label_overlaps + num_label_point_overlaps}"
-    )
+    num_overlaps = calculate_overlaps(points, boxes)
+    print(f"Numer of overlaps from random placement: {num_overlaps}")
     # A selected Circle object always goes after a Rectangle object
     for point, is_selected in points:
         if is_selected:
@@ -54,18 +52,16 @@ if __name__ == "__main__":
             else:
                 points.append((d.elements[j], False))
 
-        num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
-        print(
-            f"Minimal numer of overlaps after moving red boxes: {num_label_overlaps + num_label_point_overlaps}"
-        )
+        num_overlaps = calculate_overlaps(points, boxes)
+        print(f"Minimal numer of overlaps after moving red boxes: {num_overlaps}")
 
         d.save_svg("local_search_algorithm.svg")
         webbrowser.open(f"file://{os.path.abspath('local_search_algorithm.svg')}")
 
-        if min_num_overlaps == num_label_overlaps + num_label_point_overlaps:
+        if min_num_overlaps == num_overlaps:
             converge += 1
             if converge == 4:
                 break
         else:
-            min_num_overlaps = num_label_overlaps + num_label_point_overlaps
+            min_num_overlaps = num_overlaps
             converge = 0

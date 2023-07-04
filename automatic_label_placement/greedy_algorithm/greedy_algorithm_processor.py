@@ -1,24 +1,21 @@
 from automatic_label_placement.config_reader import *
 from drawsvg import Circle, Rectangle
-from typing import List, Tuple
+from typing import List, Tuple, Optional
+from automatic_label_placement.label_placement_utils import box_within_boundary
 
 
 def label_boxes_for_positions(
-        selected_point: Tuple[Circle, bool],
-        width: int = boundary_width,
-        height: int = boundary_height,
-        radius: int = point_radius,
-        label_width: int = box_width,
-        label_height: int = box_height,
-        label_distance: int = box_point_distance,
-) -> List[Rectangle]:
+    selected_point: Tuple[Circle, bool],
+    radius: int = point_radius,
+    label_width: int = box_width,
+    label_height: int = box_height,
+    label_distance: int = box_point_distance,
+) -> List[Optional[Rectangle]]:
     """Generate a list of four label boxes for a selected point for each position.
 
     Args:
         selected_point: A tuple where the first element is a Circle object and
             the second element is a boolean indicating if the point is selected.
-        width:  width of the boundary (default 2000).
-        height: height of the boundary within which the points are generated (default 2000).
         radius: radius of each point (default 4).
         label_width: Width of the label boxes (default 88).
         label_height: Height of the label boxes (default 23).
@@ -46,17 +43,18 @@ def label_boxes_for_positions(
             label_x = x - radius - label_distance - label_width
             label_y = y - label_height / 2
 
-        if (  # Check if a box is cut by boundary
-            label_x >= 0
-            and label_y >= 0
-            and label_x + label_width <= width
-            and label_y + label_height <= height
-        ):
+        if box_within_boundary(label_x, label_y):
             label_boxes.append(
-                Rectangle(label_x, label_y, label_width, label_height, fill="none", stroke="black")
+                Rectangle(
+                    label_x,
+                    label_y,
+                    label_width,
+                    label_height,
+                    fill="none",
+                    stroke="black",
+                )
             )
         else:
             label_boxes.append(None)
 
     return label_boxes
-

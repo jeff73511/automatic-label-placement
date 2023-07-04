@@ -92,7 +92,7 @@ def calculate_overlaps(
     radius: int = point_radius,
     label_width: int = box_width,
     label_height: int = box_height,
-) -> Tuple[int, int]:
+) -> int:
     """Calculate the number of overlaps between label boxes and between label boxes and points and
         color any overlaps red.
 
@@ -105,9 +105,7 @@ def calculate_overlaps(
         label_height: The height of the label (default 23).
 
     Returns:
-        A tuple with two integers:
-        - num_label_overlaps: Number of overlaps between label boxes.
-        - num_label_point_overlaps: Number of overlaps between label boxes and points.
+        Number of overlaps between label boxes and between label boxes and points.
     """
 
     num_label_overlaps = 0
@@ -143,4 +141,4 @@ def calculate_overlaps(
                 box.args["stroke"] = "red"
                 point.args["fill"] = "red"
 
-    return num_label_overlaps, num_label_point_overlaps
+    return num_label_overlaps + num_label_point_overlaps
