@@ -11,8 +11,6 @@ from automatic_label_placement.label_placement_utils import (
 
 def generate_label_boxes(
     random_points: List[Tuple[Circle, bool]],
-    width: int = boundary_width,
-    height: int = boundary_height,
     radius: int = point_radius,
     label_width: int = box_width,
     label_height: int = box_height,
