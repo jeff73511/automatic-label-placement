@@ -2,7 +2,11 @@ import random
 from drawsvg import Drawing, Circle, Rectangle
 from typing import List, Tuple, Optional
 from automatic_label_placement.config_reader import *
-from automatic_label_placement.label_placement_utils import reset_colors
+from automatic_label_placement.label_placement_utils import (
+    reset_colors,
+    box_within_boundary,
+    calculate_overlaps,
+)
 
 
 def generate_label_boxes(
@@ -32,10 +36,14 @@ def generate_label_boxes(
     """
 
     label_boxes = []
+    positions = ["right", "above", "below", "left"]
+
     for random_point, is_selected in random_points:
         x, y = random_point.args["cx"], random_point.args["cy"]
+
         if is_selected:
-            position = random.choice(["right", "above", "below", "left"])
+            position = random.choice(positions)
+
             while True:
                 if position == "right":
                     label_x = x + radius + label_distance
@@ -50,15 +58,10 @@ def generate_label_boxes(
                     label_x = x - radius - label_distance - label_width
                     label_y = y - label_height / 2
 
-                if (  # Check if a box is cut by boundary
-                    label_x >= 0
-                    and label_y >= 0
-                    and label_x + label_width <= width
-                    and label_y + label_height <= height
-                ):
+                if box_within_boundary(label_x, label_y):
                     break
 
-                position = random.choice(["right", "above", "below", "left"])
+                position = random.choice(positions)
 
             label_box = Rectangle(
                 label_x, label_y, label_width, label_height, fill="none", stroke="black"
@@ -66,66 +69,6 @@ def generate_label_boxes(
             label_boxes.append(label_box)
 
     return label_boxes
-
-
-def calculate_overlaps(
-    points: List[Tuple[Circle, bool]], boxes: List[Rectangle]
-) -> Tuple[int, int]:
-    """Calculate the number of overlaps between label boxes and between label boxes and points and
-        color any overlaps red.
-
-    Args:
-        points: A list of tuples where the first element of a tuple is a Circle object and
-            the second element is a boolean indicating if the point is selected.
-        boxes: A list of label boxes.
-
-    Returns:
-        A tuple with two integers:
-        - num_label_overlaps: Number of overlaps between label boxes.
-        - num_label_point_overlaps: Number of overlaps between label boxes and points.
-    """
-
-    num_label_overlaps = 0
-    num_label_point_overlaps = 0
-
-    for i in range(len(boxes)):
-        label_box = boxes[i]
-        label_x, label_y = label_box.args["x"], label_box.args["y"]
-        label_width, label_height = label_box.args["width"], label_box.args["height"]
-
-        for j in range(i + 1, len(boxes)):
-            other_box = boxes[j]
-            other_x, other_y = other_box.args["x"], other_box.args["y"]
-            other_width, other_height = (
-                other_box.args["width"],
-                other_box.args["height"],
-            )
-
-            if (
-                label_x < other_x + other_width
-                and label_x + label_width > other_x
-                and label_y < other_y + other_height
-                and label_y + label_height > other_y
-            ):
-                num_label_overlaps += 1
-                label_box.args["stroke"] = "red"
-                other_box.args["stroke"] = "red"
-
-        for point, is_selected in points:
-            point_x, point_y = point.args["cx"], point.args["cy"]
-            radius = point.args["r"]
-
-            if (
-                label_x < point_x + radius
-                and label_x + label_width > point_x - radius
-                and label_y < point_y + radius
-                and label_y + label_height > point_y - radius
-            ):
-                num_label_point_overlaps += 1
-                label_box.args["stroke"] = "red"
-                point.args["fill"] = "red"
-
-    return num_label_overlaps, num_label_point_overlaps
 
 
 def find_red_boxes(d: Drawing) -> Tuple[List[int], List[int]]:
@@ -140,13 +83,13 @@ def find_red_boxes(d: Drawing) -> Tuple[List[int], List[int]]:
             - corresponding_point_indexes: A list of corresponding point indexes.
     """
 
-    red_box_indexes: List[int] = []
-    corresponding_point_indexes: List[int] = []
+    red_box_indexes = [
+        index
+        for index, element in enumerate(d.elements)
+        if isinstance(element, Rectangle) and element.args.get("stroke") == "red"
+    ]
 
-    for index, element in enumerate(d.elements):
-        if isinstance(element, Rectangle) and element.args.get("stroke") == "red":
-            red_box_indexes.append(index)
-            corresponding_point_indexes.append(index + 1)
+    corresponding_point_indexes = [index + 1 for index in red_box_indexes]
 
     return red_box_indexes, corresponding_point_indexes
 
@@ -156,10 +99,6 @@ def process_position(
     i: int,
     label_x: float,
     label_y: float,
-    width: int = boundary_width,
-    height: int = boundary_height,
-    label_height: int = box_height,
-    label_width: int = box_width,
 ) -> Optional[int]:
     """Process the position of a label within specified boundaries, update element positions, reset colors,
         and calculate overlaps.
@@ -169,30 +108,20 @@ def process_position(
         i: The index of the element in d.elements.
         label_x: The x-coordinate of the label.
         label_y: The y-coordinate of the label.
-        width: The width of the boundaries (defaults 2000).
-        height: The height of the boundaries (defaults 2000).
-        label_height: The height of the label (defaults 23).
-        label_width: The width of the label (defaults 88).
 
     Returns:
         Optional[int]: The total number of label overlaps and label-point overlaps, or
             None if the label is outside the boundaries.
     """
 
-    if (  # Check if a box is cut by boundary
-        label_x >= 0
-        and label_y >= 0
-        and label_x + label_width <= width
-        and label_y + label_height <= height
-    ):
+    if box_within_boundary(label_x, label_y):
         d.elements[i - 1].args["x"] = label_x
         d.elements[i - 1].args["y"] = label_y
 
-        # Reset box and point color to black
         reset_colors(d)
-
         points = []
         boxes = []
+
         for j in range(1, len(d.elements)):
             element = d.elements[j]
             # A selected Circle object always goes after a Rectangle object
@@ -229,48 +158,33 @@ def move_red_boxes(
 
     corresponding_point_indexes = find_red_boxes(d)[1]
     positions = ["right", "above", "below", "left"]
+
     for i in corresponding_point_indexes:
         x = d.elements[i].args["cx"]
         y = d.elements[i].args["cy"]
+        label_positions = []
 
-        label_right = label_above = label_below = label_left = None
         for p in positions:
             if p == "right":
-                label_x_right = x + radius + label_distance
-                label_y_right = y - label_height / 2
-                label_right = (
-                    p,
-                    process_position(d, i, label_x_right, label_y_right),
-                    (label_x_right, label_y_right),
-                )
+                label_x = x + radius + label_distance
+                label_y = y - label_height / 2
             elif p == "above":
-                label_x_above = x - label_width / 2
-                label_y_above = y + radius + label_distance
-                label_above = (
-                    p,
-                    process_position(d, i, label_x_above, label_y_above),
-                    (label_x_above, label_y_above),
-                )
+                label_x = x - label_width / 2
+                label_y = y + radius + label_distance
             elif p == "below":
-                label_x_below = x - label_width / 2
-                label_y_below = y - radius - label_distance - label_height
-                label_below = (
-                    p,
-                    process_position(d, i, label_x_below, label_y_below),
-                    (label_x_below, label_y_below),
-                )
+                label_x = x - label_width / 2
+                label_y = y - radius - label_distance - label_height
             else:
-                label_x_left = x - radius - label_distance - label_width
-                label_y_left = y - label_height / 2
-                label_left = (
-                    p,
-                    process_position(d, i, label_x_left, label_y_left),
-                    (label_x_left, label_y_left),
-                )
+                label_x = x - radius - label_distance - label_width
+                label_y = y - label_height / 2
 
-        list_tuples = [label_right, label_above, label_below, label_left]
-        list_tuples = [t for t in list_tuples if t[1] is not None]
-        min_value = min(list_tuples, key=lambda x: x[1])[1]
-        min_tuples = [t for t in list_tuples if t[1] == min_value]
-        selected_tuple = random.choice(min_tuples)
-        process_position(d, i, float(selected_tuple[2][0]), float(selected_tuple[2][1]))
+            result = process_position(d, i, label_x, label_y)
+            if result is not None:
+                label_positions.append((p, result, (label_x, label_y)))
+
+        min_value = min(label_positions, key=lambda x: x[1])[1]
+        min_positions = [pos for pos in label_positions if pos[1] == min_value]
+        selected_position = random.choice(min_positions)
+        process_position(
+            d, i, float(selected_position[2][0]), float(selected_position[2][1])
+        )

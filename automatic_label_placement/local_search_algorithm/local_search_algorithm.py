@@ -1,46 +1,50 @@
-from automatic_label_placement.label_placement_utils import generate_random_points, reset_colors
+from automatic_label_placement.label_placement_utils import (
+    generate_random_points,
+    reset_colors,
+    calculate_overlaps,
+)
 from local_search_algorithm_processor import (
     generate_label_boxes,
-    calculate_overlaps,
     move_red_boxes,
 )
-from drawsvg import Drawing, Circle, Rectangle
+from drawsvg import Drawing, Rectangle
 import webbrowser
 import os
 from automatic_label_placement.config_reader import *
 
 if __name__ == "__main__":
-    points = generate_random_points()
-    boxes = generate_label_boxes(points)
-    num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
-    print(f"Numer of overlaps from random placement: {num_label_overlaps + num_label_point_overlaps}")
-
+    # Prepare the svg graph
     d = Drawing(boundary_width, boundary_height)
     boundary = Rectangle(
         0, 0, width=boundary_width, height=boundary_height, fill="none", stroke="black"
     )
     d.append(boundary)
-
-    index = 0
-    for point in points:
-        if point[1]:
-            d.append(boxes[index])
-            index += 1
-        d.append(point[0])
-
     d.set_render_size(pixel_size, pixel_size)
+
+    points = generate_random_points()
+    boxes = generate_label_boxes(points)
+    num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
+    print(
+        f"Numer of overlaps from random placement: {num_label_overlaps + num_label_point_overlaps}"
+    )
+    # A selected Circle object always goes after a Rectangle object
+    for point, is_selected in points:
+        if is_selected:
+            d.append(boxes.pop(0))
+        d.append(point)
+
     d.save_svg("local_search_algorithm.svg")
     webbrowser.open(f"file://{os.path.abspath('local_search_algorithm.svg')}")
-
+    # Re-adjust the position of red boxes
     min_num_overlaps = float("inf")
     converge = 0
     while True:
         move_red_boxes(d)
-        # Reset box and point color to black
         reset_colors(d)
 
         points = []
         boxes = []
+
         for j in range(1, len(d.elements)):
             element = d.elements[j]
             # A selected Circle object always goes after a Rectangle object
@@ -51,12 +55,12 @@ if __name__ == "__main__":
                 points.append((d.elements[j], False))
 
         num_label_overlaps, num_label_point_overlaps = calculate_overlaps(points, boxes)
-
-        d.save_svg("local_search_algorithm.svg")
-        webbrowser.open(f"file://{os.path.abspath('local_search_algorithm.svg')}")
         print(
             f"Minimal numer of overlaps after moving red boxes: {num_label_overlaps + num_label_point_overlaps}"
         )
+
+        d.save_svg("local_search_algorithm.svg")
+        webbrowser.open(f"file://{os.path.abspath('local_search_algorithm.svg')}")
 
         if min_num_overlaps == num_label_overlaps + num_label_point_overlaps:
             converge += 1
