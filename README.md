@@ -5,8 +5,8 @@
 * [Introduction](#introduction)
 * [Exercise](#exercise)
 * [Requirements](#requirements)
-* [Local Search Algorithm](#local search algorithm)
-* [Greedy Algorithm](#greedy algorithm)
+* [Local Search Algorithm](#local-search-algorithm)
+* [Greedy Algorithm](#greedy-algorithm)
 * [Usage](#usage)
 * [Contact](#contact)
 
@@ -22,8 +22,8 @@ label. This would normally be text (e.g. a name of a town on a map), but for
 simplicity just use an empty rectangular box. These label boxes should have a 
 height of 23 units, and a width of 88 units.
 
-[Local search algorithm](#local search algorithm) and 
-[greedy algorithm](#greedy algorithm) have been implemented in this project 
+[Local search algorithm](#local-search-algorithm) and 
+[greedy algorithm](#greedy-algorithm) have been implemented in this project 
 to minimize the number of overlaps between labels with other labels 
 or with points. The optimization has 1 degree of freedom: the placement of 
 the label with respect to the point it belongs to. It may only be placed in 
