@@ -10,6 +10,7 @@ from local_search_algorithm_processor import (
 from drawsvg import Drawing, Rectangle
 import webbrowser
 import os
+import random
 from automatic_label_placement.config_reader import *
 
 if __name__ == "__main__":
@@ -21,18 +22,20 @@ if __name__ == "__main__":
     d.append(boundary)
     d.set_render_size(pixel_size, pixel_size)
 
+    # Save the current state of the random number generator
+    original_state = random.getstate()
+    random.seed(seed)
     points = generate_random_points()
+    random.setstate(original_state)
     boxes = generate_label_boxes(points)
     num_overlaps = calculate_overlaps(points, boxes)
-    print(f"Numer of overlaps from random placement: {num_overlaps}")
+
     # A selected Circle object always goes after a Rectangle object
     for point, is_selected in points:
         if is_selected:
             d.append(boxes.pop(0))
         d.append(point)
 
-    d.save_svg("local_search_algorithm.svg")
-    webbrowser.open(f"file://{os.path.abspath('local_search_algorithm.svg')}")
     # Re-adjust the position of red boxes
     min_num_overlaps = float("inf")
     converge = 0
@@ -53,14 +56,13 @@ if __name__ == "__main__":
                 points.append((d.elements[j], False))
 
         num_overlaps = calculate_overlaps(points, boxes)
-        print(f"Minimal numer of overlaps after moving red boxes: {num_overlaps}")
-
-        d.save_svg("local_search_algorithm.svg")
-        webbrowser.open(f"file://{os.path.abspath('local_search_algorithm.svg')}")
 
         if min_num_overlaps == num_overlaps:
             converge += 1
             if converge == 4:
+                print(f"Minimal numer of overlaps after moving red boxes: {num_overlaps}")
+                d.save_svg("local_search_algorithm.svg")
+                webbrowser.open(f"file://{os.path.abspath('local_search_algorithm.svg')}")
                 break
         else:
             min_num_overlaps = num_overlaps

@@ -22,7 +22,12 @@ if __name__ == "__main__":
     d.append(boundary)
     d.set_render_size(pixel_size, pixel_size)
 
+    # Save the current state of the random number generator
+    original_state = random.getstate()
+    random.seed(seed)
     points = generate_random_points()
+    random.setstate(original_state)
+
     for point in points:
         d.append(point[0])
 

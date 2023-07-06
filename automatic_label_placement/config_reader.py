@@ -22,3 +22,6 @@ box_point_distance = config["LABEL"].getint("box_point_distance")
 
 # CONVERGE
 num_converge = config["CONVERGE"].getint("num_converge")
+
+# SEED
+seed = config["SEED"].getint("seed")
