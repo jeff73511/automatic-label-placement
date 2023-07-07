@@ -24,25 +24,25 @@ def measure_execution_time(func):
 
 
 @measure_execution_time
-def run_local_search_algorithm(seed_value: int):
+def run_local_search_algorithm(seed_value: int) -> None:
     """Run the local search algorithm to measure the performance.
 
     Args:
         seed_value: The seed value for random number generation.
     """
 
-    return local_search_algorithm(seed_value=seed_value)
+    local_search_algorithm(seed_value=seed_value)
 
 
 @measure_execution_time
-def run_greedy_algorithm(seed_value: int):
+def run_greedy_algorithm(seed_value: int) -> None:
     """Run the greedy algorithm to measure the performance.
 
     Args:
         seed_value: The seed value for random number generation.
     """
 
-    return greedy_algorithm(seed_value=seed)
+    greedy_algorithm(seed_value=seed)
 
 
 if __name__ == "__main__":
