@@ -5,7 +5,9 @@ from automatic_label_placement.label_placement_utils import (
 from automatic_label_placement.local_search_algorithm.local_search_algorithm_processor import (
     calculate_overlaps,
 )
-from greedy_algorithm_processor import label_boxes_for_positions
+from automatic_label_placement.greedy_algorithm.greedy_algorithm_processor import (
+    label_boxes_for_positions,
+)
 from drawsvg import Drawing, Rectangle
 import random
 import webbrowser
@@ -13,7 +15,13 @@ import os
 from automatic_label_placement.config_reader import *
 
 
-if __name__ == "__main__":
+def greedy_algorithm(seed_value: int) -> None:
+    """Run the greedy algorithm for label placement.
+
+    Args:
+        seed_value: The seed value for random number generation.
+    """
+
     # Prepare the svg graph
     d = Drawing(boundary_width, boundary_height)
     boundary = Rectangle(
@@ -24,7 +32,7 @@ if __name__ == "__main__":
 
     # Save the current state of the random number generator
     original_state = random.getstate()
-    random.seed(seed)
+    random.seed(seed_value)
     points = generate_random_points()
     random.setstate(original_state)
 
@@ -63,3 +71,7 @@ if __name__ == "__main__":
     print(f"Numer of overlaps from greedy algorithm: {num_overlaps}")
     d.save_svg("greedy_algorithm.svg")
     webbrowser.open(f"file://{os.path.abspath('greedy_algorithm.svg')}")
+
+
+if __name__ == "__main__":
+    greedy_algorithm(seed_value=seeds[0])

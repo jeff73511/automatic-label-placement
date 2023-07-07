@@ -1,7 +1,10 @@
 import configparser
+from pathlib import Path
 
+
+# script_file = Path(__file__)
 config = configparser.ConfigParser()
-config.read("../config.ini")
+config.read(f"{Path(__file__).parent}/config.ini")
 
 # PIXEL
 pixel_size = config["PIXEL"].getint("pixel_size")
@@ -23,5 +26,5 @@ box_point_distance = config["LABEL"].getint("box_point_distance")
 # CONVERGE
 num_converge = config["CONVERGE"].getint("num_converge")
 
-# SEED
-seed = config["SEED"].getint("seed")
+# SEEDS
+seeds = list(map(int, config["SEEDS"]["seeds"].split(",")))

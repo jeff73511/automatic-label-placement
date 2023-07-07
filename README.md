@@ -57,7 +57,8 @@ Run
 [local_search_algorithm.py](./automatic_label_placement/local_search_algorithm/local_search_algorithm.py) 
 and 
 [greedy_algorithm.py](./automatic_label_placement/greedy_algorithm/greedy_algorithm.py) to see 
-the results.
+the results, or [performance_comparison.py](./automatic_label_placement/performance_comparison.py)
+to compare the performance of both algorithms.
 
 ## Contact
 Created by [Jeff Chen](mailto:jeff73511@msn.com) - feel free to contact me!

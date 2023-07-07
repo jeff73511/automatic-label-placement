@@ -3,7 +3,7 @@ from automatic_label_placement.label_placement_utils import (
     reset_colors,
     calculate_overlaps,
 )
-from local_search_algorithm_processor import (
+from automatic_label_placement.local_search_algorithm.local_search_algorithm_processor import (
     generate_label_boxes,
     move_red_boxes,
 )
@@ -13,7 +13,14 @@ import os
 import random
 from automatic_label_placement.config_reader import *
 
-if __name__ == "__main__":
+
+def local_search_algorithm(seed_value: int) -> None:
+    """Run the local search algorithm for label placement.
+
+    Args:
+        seed_value: The seed value for random number generation.
+    """
+
     # Prepare the svg graph
     d = Drawing(boundary_width, boundary_height)
     boundary = Rectangle(
@@ -24,7 +31,7 @@ if __name__ == "__main__":
 
     # Save the current state of the random number generator
     original_state = random.getstate()
-    random.seed(seed)
+    random.seed(seed_value)
     points = generate_random_points()
     random.setstate(original_state)
     boxes = generate_label_boxes(points)
@@ -60,10 +67,16 @@ if __name__ == "__main__":
         if min_num_overlaps == num_overlaps:
             converge += 1
             if converge == 4:
-                print(f"Minimal numer of overlaps after moving red boxes: {num_overlaps}")
+                print(f"Numer of overlaps from local search algorithm: {num_overlaps}")
                 d.save_svg("local_search_algorithm.svg")
-                webbrowser.open(f"file://{os.path.abspath('local_search_algorithm.svg')}")
+                webbrowser.open(
+                    f"file://{os.path.abspath('local_search_algorithm.svg')}"
+                )
                 break
         else:
             min_num_overlaps = num_overlaps
             converge = 0
+
+
+if __name__ == "__main__":
+    local_search_algorithm(seed_value=seeds[0])
