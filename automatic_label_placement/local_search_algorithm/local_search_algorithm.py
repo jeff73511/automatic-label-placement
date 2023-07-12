@@ -2,6 +2,7 @@ from automatic_label_placement.label_placement_utils import (
     generate_random_points,
     reset_colors,
     calculate_overlaps,
+    create_drawing
 )
 from automatic_label_placement.local_search_algorithm.local_search_algorithm_processor import (
     generate_label_boxes,
@@ -18,24 +19,15 @@ def local_search_algorithm(seed_value: int) -> None:
     """Run the local search algorithm for label placement.
 
     Args:
-        seed_value: The seed value for random number generation.
+        seed_value: Seed value for random number generation.
     """
 
     # Prepare the svg graph
-    d = Drawing(boundary_width, boundary_height)
-    boundary = Rectangle(
-        0, 0, width=boundary_width, height=boundary_height, fill="none", stroke="black"
-    )
-    d.append(boundary)
-    d.set_render_size(pixel_size, pixel_size)
+    d = create_drawing()
 
-    # Save the current state of the random number generator
-    original_state = random.getstate()
-    random.seed(seed_value)
-    points = generate_random_points()
-    random.setstate(original_state)
+    points = generate_random_points(seed_value)
     boxes = generate_label_boxes(points)
-    num_overlaps = calculate_overlaps(points, boxes)
+    calculate_overlaps(points, boxes)
 
     # A selected Circle object always goes after a Rectangle object
     for point, is_selected in points:

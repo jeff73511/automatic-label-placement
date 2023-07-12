@@ -6,6 +6,7 @@ from itertools import combinations
 
 
 def generate_random_points(
+    seed_value: int,
     num_points: int = num_points_generated,
     width: int = boundary_width,
     height: int = boundary_height,
@@ -14,8 +15,8 @@ def generate_random_points(
     num_selected: int = num_points_selected,
 ) -> List[Tuple[Circle, bool]]:
     """Generate random points with a number of points randomly selected.
-
     Args:
+        seed_value: Seed value for random number generation.
         num_points: Total number of random points to generate (default 1000).
         width:  width of the boundary (default 2000).
         height: height of the boundary within which the points are generated (default 2000).
@@ -27,6 +28,9 @@ def generate_random_points(
         random_points: A list of tuples where the first element of a tuple is a Circle object and
         the second element is a boolean indicating if the point is selected.
     """
+
+    original_state = random.getstate()
+    random.seed(seed_value)
 
     random_points = []
     selected_points = random.sample(range(num_points), num_selected)
@@ -44,6 +48,8 @@ def generate_random_points(
         point = Circle(x, y, radius, fill="black")
 
         random_points.append((point, i in selected_points))
+
+    random.setstate(original_state)
 
     return random_points
 
@@ -143,3 +149,29 @@ def calculate_overlaps(
                 point.args["fill"] = "red"
 
     return num_label_overlaps + num_label_point_overlaps
+
+
+def create_drawing(
+    boundary_width: int = boundary_width,
+    boundary_height: int = boundary_height,
+    pixel_size: int = pixel_size,
+):
+    """Creates a Drawing object with a boundary rectangle and sets the render size.
+
+    Args:
+        boundary_width: Width of the boundary rectangle.
+        boundary_height: Height of the boundary rectangle.
+        pixel_size (int): Size of the rendering pixels.
+
+    Returns:
+        Drawing: A Drawing object.
+    """
+
+    d = Drawing(boundary_width, boundary_height)
+    boundary = Rectangle(
+        0, 0, width=boundary_width, height=boundary_height, fill="none", stroke="black"
+    )
+    d.append(boundary)
+    d.set_render_size(pixel_size, pixel_size)
+
+    return d

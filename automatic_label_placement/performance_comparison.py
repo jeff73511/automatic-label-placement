@@ -61,4 +61,4 @@ if __name__ == "__main__":
         print("Greedy Algorithm Output:")
         run_greedy_algorithm(seed_value=seed)
 
-        print("="*48)
+        print("=" * 48)
