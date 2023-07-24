@@ -17,7 +17,7 @@ chart. This is related to the typographic design of such labels.
 
 ## Exercise
 Generate 1000 random points in a square area of 2000 x 2000 units; each point 
-has a radius of 1 unit. For a random selection of 200 of these points, add a 
+has a radius of 4 unit. For a random selection of 200 of these points, add a 
 label. This would normally be text (e.g. a name of a town on a map), but for 
 simplicity just use an empty rectangular box. These label boxes should have a 
 height of 23 units, and a width of 88 units.
