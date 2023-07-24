@@ -175,3 +175,118 @@ def create_drawing(
     d.set_render_size(pixel_size, pixel_size)
 
     return d
+
+
+import random
+from automatic_label_placement.config_reader import *
+from typing import List
+
+
+class Coordinates:
+
+    def __init__(self, x: float, y: float):
+        self.x = x
+        self.y = y
+
+
+class Point(Coordinates):
+    radius = point_radius
+
+    def __init__(self, x: float, y: float):
+        super().__init__(x, y)
+
+
+class LabelBox(Coordinates):
+    width = box_width
+    height = box_height
+
+    def __init__(self, x: float, y: float):
+        super().__init__(x, y)
+
+
+class PointBoxGenerator:
+    area_width = boundary_width
+    area_height = boundary_height
+
+    def __init__(self,
+                 num_points=num_points_generated,
+                 label_point_distance=box_point_distance):
+
+        self.num_points = num_points
+        self.label_point_distance = label_point_distance
+
+        self.points: List[Point] = []
+        self.label_boxes: List[LabelBox] = []
+
+    def generate_points(self):
+
+        if 2 * Point.radius >= LabelBox.height:
+            y_start = Point.radius
+            y_end = self.area_height - Point.radius
+        else:
+            y_start = LabelBox.height / 2
+            y_end = self.area_height - LabelBox.height / 2
+
+        for _ in range(self.num_points):
+            x = random.uniform(Point.radius, self.area_width - Point.radius)
+            y = random.uniform(y_start, y_end)
+            point = Point(x, y)
+            self.points.append(point)
+
+    def add_a_label_box(self, selected_point: Point) -> LabelBox:
+
+        pre_dir = None
+        directions = ['right', 'above', 'below', 'left']
+        while True:
+            if pre_dir is not None:
+                directions.remove(pre_dir)
+
+            direction = random.choice(directions)
+
+            if direction == 'right':
+                x = selected_point.x + Point.radius + self.label_point_distance
+                y = selected_point.y - (LabelBox.height / 2)
+            elif direction == 'above':
+                x = selected_point.x - (LabelBox.width / 2)
+                y = selected_point.y + Point.radius + self.label_point_distance
+            elif direction == 'below':
+                x = selected_point.x - (LabelBox.width / 2)
+                y = selected_point.y - Point.radius - self.label_point_distance - LabelBox.height
+            else:  # Left
+                x = selected_point.x - Point.radius - self.label_point_distance - LabelBox.width
+                y = selected_point.y - (LabelBox.height / 2)
+
+            # Check if a box is within the boundary.
+            if 0 <= x <= self.area_width - LabelBox.width and 0 <= y <= self.area_height - LabelBox.height:
+                break
+            pre_dir = direction
+
+        label_box_point = Coordinates(x, y)
+        return LabelBox(label_box_point.x, label_box_point.y)
+
+    def add_label_boxes(self, num_label_boxes=num_points_selected):
+
+        selected_points = random.sample(self.points, num_label_boxes)
+
+        for point in selected_points:
+            label_box = self.add_a_label_box(selected_point=point)
+            self.label_boxes.append(label_box)
+
+    def print_label_boxes(self):
+        for label_box in self.label_boxes:
+            print(f"Label Box Point: ({label_box.x}, {label_box.y})")
+
+        print(f"Total Label Boxes: {len(self.label_boxes)}")
+
+
+# Create an instance of PointGenerator
+generator = PointBoxGenerator()
+
+# Generate random points
+generator.generate_points()
+
+# Add label boxes to a random selection of points
+generator.add_label_boxes(200)
+
+# Print the coordinates of the label boxes
+generator.print_label_boxes()
